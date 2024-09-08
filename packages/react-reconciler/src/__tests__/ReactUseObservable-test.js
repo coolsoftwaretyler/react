@@ -89,7 +89,7 @@ describe('ReactUse', () => {
 
     it('basic use(observable)', async () => {
         const observable = ConvertObjectToState({
-            "name": "John"
+            'name': 'John'
         })
 
         function Sync() {
@@ -107,8 +107,9 @@ describe('ReactUse', () => {
         root.render(<App />);
         await waitForAll([]);
         expect(root).toMatchRenderedOutput('John');
-        observable.name = 'Jane';
-        root.render(<App />);
+        await act(async () => {
+            observable.name = 'Jane';
+        })
         await waitForAll([]);
         expect(root).toMatchRenderedOutput('Jane');
     });

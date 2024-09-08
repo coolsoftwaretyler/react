@@ -6,7 +6,6 @@
  *
  * @flow
  */
-import { entangledRenderLanes, performConcurrentWorkOnRoot } from './ReactFiberWorkLoop';
 
 import type {
   ReactContext,
@@ -145,7 +144,7 @@ import {
   enqueueConcurrentRenderForLane,
 } from './ReactFiberConcurrentUpdates';
 import { getTreeId } from './ReactFiberTreeContext';
-import { now, scheduleCallback } from './Scheduler';
+import { now, } from './Scheduler';
 import {
   trackUsedThenable,
   checkIfUseWrappedInTryCatch,
@@ -158,12 +157,11 @@ import {
   peekEntangledActionThenable,
   chainThenableValue,
 } from './ReactFiberAsyncAction';
-import { ensureRootIsScheduled, requestTransitionLane } from './ReactFiberRootScheduler';
+import { requestTransitionLane } from './ReactFiberRootScheduler';
 import { isCurrentTreeHidden } from './ReactFiberHiddenContext';
 import { requestCurrentTransition } from './ReactFiberTransition';
 
 import { callComponentInDEV } from './ReactFiberCallUserSpace';
-import { flushSync } from 'react-noop-renderer';
 
 export type Update<S, A> = {
   lane: Lane,
@@ -1183,15 +1181,7 @@ function readObservable(observable: any) {
   const fiber = currentlyRenderingFiber;
 
   observable.$$registerObserver(() => {
-    const previousPriority = getCurrentUpdatePriority();
-    setCurrentUpdatePriority(
-      higherEventPriority(previousPriority, ContinuousEventPriority),
-    );
 
-    const lane = requestUpdateLane(fiber);
-    const update  = createUpdate(lane);
-
-    const queue = fiber.updateQueue;
     const root = enqueueConcurrentRenderForLane(fiber, SyncLane);
     if (root !== null) {
       scheduleUpdateOnFiber(root, fiber, SyncLane);
