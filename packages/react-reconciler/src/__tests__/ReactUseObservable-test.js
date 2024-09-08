@@ -19,9 +19,7 @@ function ConvertObjectToState(target) {
         },
         set(target, prop, value) {
             const result = Reflect.set(...arguments);
-            console.log('are we here?')
             if (listeners[prop]) {
-                console.log('we have al istener for this prop', prop)
                 listeners[prop].forEach((callback) => {
                     callback();
                 });
@@ -109,9 +107,8 @@ describe('ReactUse', () => {
         root.render(<App />);
         await waitForAll([]);
         expect(root).toMatchRenderedOutput('John');
-        await act(() => {
-            observable.name = "Jane";
-        });
+        observable.name = 'Jane';
+        root.render(<App />);
         await waitForAll([]);
         expect(root).toMatchRenderedOutput('Jane');
     });

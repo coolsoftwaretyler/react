@@ -163,6 +163,7 @@ import { isCurrentTreeHidden } from './ReactFiberHiddenContext';
 import { requestCurrentTransition } from './ReactFiberTransition';
 
 import { callComponentInDEV } from './ReactFiberCallUserSpace';
+import { flushSync } from 'react-noop-renderer';
 
 export type Update<S, A> = {
   lane: Lane,
@@ -1182,19 +1183,18 @@ function readObservable(observable: any) {
   const fiber = currentlyRenderingFiber;
 
   observable.$$registerObserver(() => {
-    console.log('Render, please');
+    const previousPriority = getCurrentUpdatePriority();
+    setCurrentUpdatePriority(
+      higherEventPriority(previousPriority, ContinuousEventPriority),
+    );
 
     const lane = requestUpdateLane(fiber);
-    console.log('lane', lane)
-
-    const update  = createUpdate(1, null, null);
+    const update  = createUpdate(lane);
 
     const queue = fiber.updateQueue;
-    const root = enqueueConcurrentRenderForLane(fiber, 1);
+    const root = enqueueConcurrentRenderForLane(fiber, SyncLane);
     if (root !== null) {
-      console.log('we got a root')
-      scheduleUpdateOnFiber(root, fiber, 1);
-      performConcurrentWorkOnRoot(root);
+      scheduleUpdateOnFiber(root, fiber, SyncLane);
     }
   });
 
