@@ -89,11 +89,12 @@ describe('ReactUse', () => {
 
     it('basic use(observable)', async () => {
         const observable = ConvertObjectToState({
-            'name': 'John'
+            'name': 'First'
         })
 
         function Sync() {
             const { name } = use(observable)
+            console.log('name', name);
             return name;
         }
 
@@ -106,11 +107,11 @@ describe('ReactUse', () => {
         const root = ReactNoop.createRoot();
         root.render(<App />);
         await waitForAll([]);
-        expect(root).toMatchRenderedOutput('John');
+        expect(root).toMatchRenderedOutput('First');
         await act(async () => {
-            observable.name = 'Jane';
+            observable.name = 'Second';
         })
         await waitForAll([]);
-        expect(root).toMatchRenderedOutput('Jane');
+        expect(root).toMatchRenderedOutput('Second');
     });
 });
