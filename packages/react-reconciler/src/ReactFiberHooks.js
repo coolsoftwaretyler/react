@@ -1177,17 +1177,22 @@ function use<T>(usable: Usable<T>): T {
   throw new Error('An unsupported type was passed to use(): ' + String(usable));
 }
 
+const knownObservables = new Set();
 function readObservable(observable: any) {
+  if (knownObservables.has(observable)){
+    return observable
+}
   const fiber = currentlyRenderingFiber;
 
   observable.$$registerObserver(() => {
-
+    // Bust up the memoized state to force a full re-render with no bailout
+    fiber.memoizedProps = null
     const root = enqueueConcurrentRenderForLane(fiber, SyncLane);
     if (root !== null) {
       scheduleUpdateOnFiber(root, fiber, SyncLane);
     }
   });
-
+  knownObservables.add(observable)
   return observable;
 }
 

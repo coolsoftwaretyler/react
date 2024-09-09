@@ -1,1 +1,1 @@
-export default '19.0.0-rc-7d976979-20240907';
+export default '19.0.0-rc-7c40b75e-20240907';

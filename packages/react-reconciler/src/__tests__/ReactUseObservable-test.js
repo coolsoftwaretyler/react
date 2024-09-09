@@ -1,41 +1,37 @@
-const StateManager = {
-    nodes: [],
-    possibleListener: null,
-};
+let potentialListener = null;
 
 function ConvertObjectToState(target) {
-    const listeners = {};
+  const listeners = {};
 
-    const handler = {
-        get(target, prop, receiver) {
-            if (StateManager.possibleListener) {
-                if (!listeners[prop]) {
-                    listeners[prop] = new Set();
-                }
-                listeners[prop].add(StateManager.possibleListener);
-            }
+  const handler = {
+    get(target, prop, receiver) {
+      if (potentialListener) {
+        if (!listeners[prop]) {
+          listeners[prop] = new Set();
+        }
+        listeners[prop].add(potentialListener);
+      }
 
-            return Reflect.get(...arguments);
-        },
-        set(target, prop, value) {
-            const result = Reflect.set(...arguments);
-            if (listeners[prop]) {
-                listeners[prop].forEach((callback) => {
-                    callback();
-                });
-            }
+      return Reflect.get(...arguments);
+    },
+    set(target, prop, value) {
+      const result = Reflect.set(...arguments);
+      if (listeners[prop]) {
+        listeners[prop].forEach(callback => {
+          callback();
+        });
+      }
 
-            return result;
-        },
-    };
+      return result;
+    },
+  };
 
-    const proxy = new Proxy(target, handler);
-    proxy.$$typeof = 'REACT_OBSERVABLE_TYPE';
-    proxy.$$registerObserver = (callback) => {
-        StateManager.possibleListener = callback;
-    };
-    StateManager.nodes.push(proxy);
-    return proxy;
+  const proxy = new Proxy(target, handler);
+  proxy.$$typeof = 'REACT_OBSERVABLE_TYPE';
+  proxy.$$registerObserver = callback => {
+    potentialListener = callback;
+  };
+  return proxy;
 }
 /**
  * Copyright (c) Meta Platforms, Inc. and affiliates.
@@ -46,7 +42,7 @@ function ConvertObjectToState(target) {
  * @emails react-core
  */
 
-'use strict';
+('use strict');
 
 let React;
 let ReactNoop;
@@ -59,59 +55,58 @@ let waitForPaint;
 let assertLog;
 let waitForAll;
 let waitForMicrotasks;
+let startTransition;
 
 describe('ReactUse', () => {
-    beforeEach(() => {
-        jest.resetModules();
+  beforeEach(() => {
+    jest.resetModules();
 
-        React = require('react');
-        ReactNoop = require('react-noop-renderer');
-        Scheduler = require('scheduler');
-        act = require('internal-test-utils').act;
-        use = React.use;
-        useDebugValue = React.useDebugValue;
-        useState = React.useState;
-        useTransition = React.useTransition;
-        useMemo = React.useMemo;
-        useEffect = React.useEffect;
-        Suspense = React.Suspense;
-        startTransition = React.startTransition;
+    React = require('react');
+    ReactNoop = require('react-noop-renderer');
+    Scheduler = require('scheduler');
+    act = require('internal-test-utils').act;
+    use = React.use;
+    useDebugValue = React.useDebugValue;
+    useState = React.useState;
+    useTransition = React.useTransition;
+    useMemo = React.useMemo;
+    useEffect = React.useEffect;
+    Suspense = React.Suspense;
+    startTransition = React.startTransition;
 
-        const InternalTestUtils = require('internal-test-utils');
-        waitForAll = InternalTestUtils.waitForAll;
-        assertLog = InternalTestUtils.assertLog;
-        waitForPaint = InternalTestUtils.waitForPaint;
-        waitFor = InternalTestUtils.waitFor;
-        waitForMicrotasks = InternalTestUtils.waitForMicrotasks;
+    const InternalTestUtils = require('internal-test-utils');
+    waitForAll = InternalTestUtils.waitForAll;
+    assertLog = InternalTestUtils.assertLog;
+    waitForPaint = InternalTestUtils.waitForPaint;
+    waitFor = InternalTestUtils.waitFor;
+    waitForMicrotasks = InternalTestUtils.waitForMicrotasks;
 
-        pendingTextRequests = new Map();
+    pendingTextRequests = new Map();
+  });
+
+  it('basic use(observable)', async () => {
+    const observable = ConvertObjectToState({
+      name: 'First',
     });
 
-    it('basic use(observable)', async () => {
-        const observable = ConvertObjectToState({
-            'name': 'First'
-        })
+    function Sync() {
+      const {name} = use(observable);
+      return name;
+    }
 
-        function Sync() {
-            const { name } = use(observable)
-            console.log('name', name);
-            return name;
-        }
+    function App() {
+      return <Sync />;
+    }
 
-        function App() {
-            return (
-                <Sync />
-            );
-        }
+    const root = ReactNoop.createRoot();
+    root.render(<App />);
 
-        const root = ReactNoop.createRoot();
-        root.render(<App />);
-        await waitForAll([]);
-        expect(root).toMatchRenderedOutput('First');
-        await act(async () => {
-            observable.name = 'Second';
-        })
-        await waitForAll([]);
-        expect(root).toMatchRenderedOutput('Second');
+    await waitForAll([]);
+    expect(root).toMatchRenderedOutput('First');
+
+    await act(async () => {
+      observable.name = 'Second';
     });
+    expect(root).toMatchRenderedOutput('Second');
+  });
 });
